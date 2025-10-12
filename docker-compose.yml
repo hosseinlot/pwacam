@@ -1,0 +1,7 @@
+services:
+  flutter_web_app:
+    build: .
+    container_name: pwacam
+    ports:
+      - "8080:80"
+    restart: always

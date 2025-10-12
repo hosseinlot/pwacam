@@ -1,0 +1,36 @@
+name: Build and Deploy Flutter App
+
+on:
+  push:
+    branches: [ "main" ] 
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/pharmacads_flutter:latest
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/pharmacads_flutter
+            docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.DOCKER_PAT }}
+            docker stack deploy --with-registry-auth -c docker-compose.yml pharmacads_flutter
