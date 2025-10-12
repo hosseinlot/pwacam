@@ -9,7 +9,7 @@ RUN flutter pub get
 
 
 COPY . .
-RUN flutter packages pub run build_runner build --delete-conflicting-outputs
+
 RUN flutter build web --release
 
 # Stage 2: Serve the built application with Nginx
