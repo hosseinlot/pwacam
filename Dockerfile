@@ -9,7 +9,7 @@ COPY pubspec.yaml ./
 RUN flutter pub get
 
 COPY . .
-RUN flutter packages pub run build_runner build --delete-conflicting-outputs
+
 RUN flutter --version
 RUN flutter build web --release
 
