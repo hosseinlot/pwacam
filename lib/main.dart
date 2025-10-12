@@ -33,6 +33,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     print('debuging ...');
+    print('1');
     return Scaffold(
       appBar: AppBar(title: const Text('Home Page')),
       body: Center(
