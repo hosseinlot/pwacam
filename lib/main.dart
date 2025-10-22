@@ -1,16 +1,13 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'biometric.dart';
 import 'camera_screen.dart';
 
 List<CameraDescription> cameras = [];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    cameras = await availableCameras();
-  } on CameraException catch (e) {
-    print('Error: ${e.code}\nError Message: ${e.description}');
-  }
+
   runApp(const MyApp());
 }
 
@@ -37,15 +34,27 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Home Page')),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            if (cameras.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No camera found!')));
-            } else {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => CameraScreen(cameras: cameras)));
-            }
-          },
-          child: const Text('Open Camera'),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                if (cameras.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No camera found!')));
+                } else {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => CameraScreen(cameras: cameras)));
+                }
+              },
+              child: const Text('Open Camera'),
+            ),
+            SizedBox(height: 32),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => AuthScreen()));
+              },
+              child: const Text('Open Biometric'),
+            ),
+          ],
         ),
       ),
     );
