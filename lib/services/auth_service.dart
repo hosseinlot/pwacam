@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static const String baseUrl = 'http://localhost:5183';
+  static const String baseUrl = 'https://authbank.kiax.ir';
 
   static final http.Client client = http.Client();
 
