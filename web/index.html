@@ -20,6 +20,76 @@
   <script src="https://github.com/corbado/flutter-passkeys/releases/download/2.4.0/bundle.js"></script>
 </head>
 <body>
+<script>
+  // Service Worker Management - Force Update on Every Load
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      // First, unregister all existing service workers
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        console.log('Found ' + registrations.length + ' service worker registrations');
+        for(let registration of registrations) {
+          console.log('Unregistering service worker: ', registration.scope);
+          registration.unregister().then(function(success) {
+            if (success) {
+              console.log('Service worker unregistered successfully');
+            } else {
+              console.log('Service worker unregistration failed');
+            }
+          });
+        }
+      });
+
+      // Clear all caches
+      caches.keys().then(function(cacheNames) {
+        console.log('Clearing ' + cacheNames.length + ' caches');
+        cacheNames.forEach(function(cacheName) {
+          caches.delete(cacheName).then(function(success) {
+            console.log('Cache ' + cacheName + ' deleted: ' + success);
+          });
+        });
+      });
+
+      // Register new service worker with bypass
+      setTimeout(function() {
+        navigator.serviceWorker.register('/flutter_service_worker.js', {
+          scope: '/',
+          updateViaCache: 'none'
+        }).then(function(registration) {
+          console.log('New service worker registered: ', registration.scope);
+
+          // Force immediate update
+          registration.update();
+
+          // Check for updates every hour
+          setInterval(function() {
+            registration.update();
+          }, 60 * 60 * 1000);
+        }).catch(function(error) {
+          console.log('Service worker registration failed: ', error);
+        });
+      }, 1000);
+    });
+  }
+
+  // Version check and hard reload if needed
+  const CURRENT_VERSION = '__VERSION__';
+  const storedVersion = localStorage.getItem('app_version');
+
+  if (storedVersion && storedVersion !== CURRENT_VERSION) {
+    console.log('New version detected. Forcing reload...');
+    localStorage.setItem('app_version', CURRENT_VERSION);
+
+    // Clear all storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Hard reload
+    window.location.reload(true);
+  } else {
+    localStorage.setItem('app_version', CURRENT_VERSION);
+  }
+</script>
+
 <script src="flutter_bootstrap.js" type="application/javascript"></script>
 </body>
 </html>
