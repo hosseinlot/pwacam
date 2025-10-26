@@ -177,7 +177,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: SingleChildScrollView(child: Text(_message, style: const TextStyle(fontSize: 16))),
+                child: SingleChildScrollView(child: SelectableText(_message, style: const TextStyle(fontSize: 16))),
               ),
             ),
           ],
