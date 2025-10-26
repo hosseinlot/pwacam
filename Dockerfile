@@ -12,12 +12,13 @@ COPY . .
 
 RUN flutter build web --release
 
-# Activate and run the Service Worker generator
+# Activate and run the Service Worker generator - FIXED VERSION
 RUN dart pub global activate sw
 RUN dart run sw:generate \
     --input=build/web \
     --output=flutter_service_worker.js \
     --prefix=pwacam-cache \
+    --version=$APP_VERSION \
     --glob="**.{html,js,wasm,json}" \
     --no-glob="flutter_service_worker.js; **/*.map; assets/NOTICES"
 
