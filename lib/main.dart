@@ -36,6 +36,7 @@ class HomeScreen extends StatelessWidget {
       body: Center(
         child: Column(
           children: [
+            Container(height: 100, width: 300, child: Center(child: Text('data'))),
             ElevatedButton(
               onPressed: () {
                 if (cameras.isEmpty) {
