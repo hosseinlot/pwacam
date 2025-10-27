@@ -13,13 +13,16 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _login() {
-    // اگر فیلدها معتبر بودند
+  Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      // *** تغییر کلیدی اینجاست ***
-      // به جای نمایش SnackBar، به صفحه خوش‌آمدگویی می‌رویم.
-      // این کار به مرورگر سیگنال می‌دهد که ورود موفق بوده است.
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
+      // **تغییر ۲: اضافه کردن یک تاخیر بسیار کوتاه**
+      // این به مرورگر فرصت می‌دهد تا اطلاعات فرم را قبل از ناوبری ثبت کند
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      if (mounted) {
+        // بررسی اینکه ویجت هنوز در صفحه وجود دارد
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const WelcomePage()));
+      }
     }
   }
 
@@ -43,12 +46,15 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.lock_person, size: 80, color: Colors.indigo),
+                  const Icon(Icons.lock_person_sharp, size: 80, color: Colors.indigo),
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _usernameController,
                     decoration: const InputDecoration(labelText: 'نام کاربری', prefixIcon: Icon(Icons.person_outline)),
                     autofillHints: const [AutofillHints.username],
+                    // **تغییر ۱: اضافه کردن TextInputAction.next**
+                    // این باعث می‌شود دکمه "بعدی" روی کیبورد نمایش داده شود
+                    textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.name,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -63,6 +69,9 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: const InputDecoration(labelText: 'رمز عبور', prefixIcon: Icon(Icons.lock_outline)),
                     obscureText: true,
                     autofillHints: const [AutofillHints.password],
+                    // **تغییر ۱: اضافه کردن TextInputAction.done**
+                    // این باعث می‌شود دکمه "انجام" روی کیبورد نمایش داده شود
+                    textInputAction: TextInputAction.done,
                     onEditingComplete: _login,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
