@@ -1,6 +1,7 @@
 // login_page.dart
 
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:html' as html;
 import 'package:pwacam/profile_screen.dart';
 import 'package:pwacam/services/auth_service.dart';
@@ -17,7 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // **تغییر ۱: یک FocusNode برای فیلد پسورد تعریف می‌کنیم**
+  // فقط یک FocusNode برای فیلد پسورد نیاز داریم
   final FocusNode _passwordFocusNode = FocusNode();
 
   bool _isLoading = false;
@@ -68,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-    _passwordFocusNode.dispose(); // **تغییر ۲: FocusNode را حتما dispose کنید**
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -93,13 +94,15 @@ class _LoginPageState extends State<LoginPage> {
                     autofillHints: const [AutofillHints.username, AutofillHints.newUsername],
                     textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.name,
-                    // **تغییر ۳: منطق انتقال فوکوس**
-                    onChanged: (value) {
-                      // اگر فیلد نام کاربری به طور ناگهانی پر شد (یعنی Autofill شده)
-                      // و فیلد پسورد خالی بود، فوکوس را به پسورد منتقل کن.
-                      if (value.isNotEmpty && _passwordController.text.isEmpty) {
-                        _passwordFocusNode.requestFocus();
-                      }
+                    // **تغییر کلیدی اینجاست**
+                    onTap: () {
+                      // بعد از نیم ثانیه چک می‌کنیم
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        // اگر نام کاربری پر شده بود ولی رمز عبور نه، فوکوس را منتقل کن
+                        if (_usernameController.text.isNotEmpty && _passwordController.text.isEmpty) {
+                          // _passwordFocusNode.requestFocus();
+                        }
+                      });
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) return 'لطفا نام کاربری را وارد کنید';
@@ -109,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
-                    focusNode: _passwordFocusNode, // **تغییر ۴: اتصال FocusNode به فیلد پسورد**
+                    focusNode: _passwordFocusNode, // اتصال FocusNode
                     decoration: const InputDecoration(labelText: 'رمز عبور', prefixIcon: Icon(Icons.lock_outline)),
                     obscureText: true,
                     autofillHints: const [AutofillHints.password, AutofillHints.newPassword],
