@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:pwacam/profile_screen.dart';
+import 'dart:async'; // برای استفاده از Future.delayed
+import 'package:pwacam/profile_screen.dart'; // فرض می‌شود WelcomePage در این فایل است
 import 'package:pwacam/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,93 +15,64 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // **تغییر ۱: اضافه کردن متغیر برای مدیریت وضعیت بارگذاری**
   bool _isLoading = false;
 
-  Future<void> _handleFormSubmit() async {
-    if (_formKey.currentState!.validate()) {
-      // فعال کردن حالت بارگذاری
+  Future<void> _performAuthAction(Future<void> Function() authFuture) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await authFuture();
+
+      // *** تغییر کلیدی و نهایی اینجاست ***
+      // ۱. ابتدا حالت لودینگ را غیرفعال می‌کنیم تا UI به حالت عادی برگردد.
       setState(() {
-        _isLoading = true;
+        _isLoading = false;
       });
 
-      try {
-        // **تغییر ۲: فراخوانی واقعی API**
-        await AuthService.login(
-          _usernameController.text,
-          _passwordController.text,
-        );
+      // ۲. یک وقفه کوتاه به مرورگر فرصت می‌دهد تا پاپ‌آپ را نمایش دهد.
+      await Future.delayed(const Duration(milliseconds: 100));
 
-        // اگر API موفق بود، به صفحه بعد می‌رویم
-        if (mounted) {
-          Navigator.pushReplacement(
-            // از pushReplacement استفاده می‌کنیم تا کاربر نتواند به صفحه لاگین بازگردد
-            context,
-            MaterialPageRoute(builder: (context) => const WelcomePage()),
-          );
-        }
-      } catch (e) {
-        // **تغییر ۳: مدیریت خطا**
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString().replaceFirst('Exception: ', '')), // نمایش پیام خطا از API
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        // در هر صورت (موفق یا ناموفق)، حالت بارگذاری را غیرفعال می‌کنیم
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const WelcomePage()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      // این بخش دیگر نیازی به setState ندارد چون در بالا انجام شده
+      if (mounted && _isLoading) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
 
-  Future<void> _handleFormRegisterSubmit() async {
-    if (_formKey.currentState!.validate()) {
-      // فعال کردن حالت بارگذاری
-      setState(() {
-        _isLoading = true;
-      });
-
-      try {
-        // **تغییر ۲: فراخوانی واقعی API**
-        await AuthService.register(
+  void _onLogin() {
+    _performAuthAction(() => AuthService.login(
           _usernameController.text,
           _passwordController.text,
-        );
+        ));
+  }
 
-        // اگر API موفق بود، به صفحه بعد می‌رویم
-        if (mounted) {
-          Navigator.pushReplacement(
-            // از pushReplacement استفاده می‌کنیم تا کاربر نتواند به صفحه لاگین بازگردد
-            context,
-            MaterialPageRoute(builder: (context) => const WelcomePage()),
-          );
-        }
-      } catch (e) {
-        // **تغییر ۳: مدیریت خطا**
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString().replaceFirst('Exception: ', '')), // نمایش پیام خطا از API
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        // در هر صورت (موفق یا ناموفق)، حالت بارگذاری را غیرفعال می‌کنیم
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
-    }
+  void _onRegister() {
+    _performAuthAction(() => AuthService.register(
+          _usernameController.text,
+          _passwordController.text,
+        ));
   }
 
   @override
@@ -113,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('صفحه ورود')),
+      appBar: AppBar(title: const Text('ورود / ثبت‌نام')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -135,7 +107,7 @@ class _LoginPageState extends State<LoginPage> {
                       labelText: 'نام کاربری',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
-                    autofillHints: const [AutofillHints.username],
+                    autofillHints: const [AutofillHints.username, AutofillHints.newUsername],
                     textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.name,
                     validator: (value) {
@@ -153,9 +125,9 @@ class _LoginPageState extends State<LoginPage> {
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
                     obscureText: true,
-                    autofillHints: const [AutofillHints.password],
+                    autofillHints: const [AutofillHints.password, AutofillHints.newPassword],
                     textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _handleFormSubmit(),
+                    onFieldSubmitted: (_) => _onLogin(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'لطفا رمز عبور را وارد کنید';
@@ -164,16 +136,27 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton(
-                          onPressed: _handleFormSubmit,
+                  if (_isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _onLogin,
                           child: const Text('ورود'),
                         ),
-                  ElevatedButton(
-                    onPressed: _handleFormRegisterSubmit,
-                    child: const Text('register'),
-                  ),
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: _onRegister,
+                          child: const Text('ثبت‌نام'),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
