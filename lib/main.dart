@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:pwacam/autofill_screen.dart';
 import 'biometric.dart';
 import 'camera_screen.dart';
 
@@ -59,7 +60,7 @@ class HomeScreen extends StatelessWidget {
 
             ElevatedButton(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => AuthScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => AutofillScreen()));
               },
               child: const Text('Open Fill'),
             ),
