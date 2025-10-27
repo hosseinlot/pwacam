@@ -55,6 +55,14 @@ class HomeScreen extends StatelessWidget {
               },
               child: const Text('Open Biometric'),
             ),
+            SizedBox(height: 32),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => AuthScreen()));
+              },
+              child: const Text('Open Fill'),
+            ),
           ],
         ),
       ),

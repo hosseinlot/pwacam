@@ -1,7 +1,6 @@
 name: pwacam
 description: "A new Flutter project."
 
-
 version: 1.0.3+3
 
 environment:
@@ -18,7 +17,6 @@ dependencies:
   passkeys: ^2.15.1
   cupertino_icons: ^1.0.8
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -26,7 +24,5 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   sw: ^0.0.5
 
-
 flutter:
-
   uses-material-design: true
