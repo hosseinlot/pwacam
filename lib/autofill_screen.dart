@@ -1,6 +1,8 @@
+// login_page.dart
+
 import 'package:flutter/material.dart';
-import 'dart:async'; // برای استفاده از Future.delayed
-import 'package:pwacam/profile_screen.dart'; // فرض می‌شود WelcomePage در این فایل است
+import 'dart:html' as html; // <-- این import جدید و بسیار مهم است
+import 'package:pwacam/profile_screen.dart';
 import 'package:pwacam/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -27,21 +29,10 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await authFuture();
 
-      // *** تغییر کلیدی و نهایی اینجاست ***
-      // ۱. ابتدا حالت لودینگ را غیرفعال می‌کنیم تا UI به حالت عادی برگردد.
-      setState(() {
-        _isLoading = false;
-      });
-
-      // ۲. یک وقفه کوتاه به مرورگر فرصت می‌دهد تا پاپ‌آپ را نمایش دهد.
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const WelcomePage()),
-        );
-      }
+      // *** راه حل قطعی و نهایی اینجاست ***
+      // به جای استفاده از Navigator فلاتر، مستقیماً به مرورگر دستور می‌دهیم
+      // که به آدرس جدید برود. این یک بارگذاری مجدد کامل صفحه است.
+      html.window.location.assign('/welcome');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -52,8 +43,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } finally {
-      // این بخش دیگر نیازی به setState ندارد چون در بالا انجام شده
-      if (mounted && _isLoading) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -84,6 +74,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // بقیه کد build دقیقاً مثل قبل است و نیازی به تغییر ندارد
     return Scaffold(
       appBar: AppBar(title: const Text('ورود / ثبت‌نام')),
       body: Center(
@@ -95,43 +86,29 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.lock_person_sharp,
-                    size: 80,
-                    color: Colors.indigo,
-                  ),
+                  const Icon(Icons.lock_person_sharp, size: 80, color: Colors.indigo),
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'نام کاربری',
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
+                    decoration: const InputDecoration(labelText: 'نام کاربری', prefixIcon: Icon(Icons.person_outline)),
                     autofillHints: const [AutofillHints.username, AutofillHints.newUsername],
                     textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.name,
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'لطفا نام کاربری را وارد کنید';
-                      }
+                      if (value == null || value.isEmpty) return 'لطفا نام کاربری را وارد کنید';
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(
-                      labelText: 'رمز عبور',
-                      prefixIcon: Icon(Icons.lock_outline),
-                    ),
+                    decoration: const InputDecoration(labelText: 'رمز عبور', prefixIcon: Icon(Icons.lock_outline)),
                     obscureText: true,
                     autofillHints: const [AutofillHints.password, AutofillHints.newPassword],
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _onLogin(),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'لطفا رمز عبور را وارد کنید';
-                      }
+                      if (value == null || value.isEmpty) return 'لطفا رمز عبور را وارد کنید';
                       return null;
                     },
                   ),
@@ -143,18 +120,12 @@ class _LoginPageState extends State<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo,
-                            foregroundColor: Colors.white,
-                          ),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
                           onPressed: _onLogin,
                           child: const Text('ورود'),
                         ),
                         const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: _onRegister,
-                          child: const Text('ثبت‌نام'),
-                        ),
+                        OutlinedButton(onPressed: _onRegister, child: const Text('ثبت‌نام')),
                       ],
                     ),
                 ],
