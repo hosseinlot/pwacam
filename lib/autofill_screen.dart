@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:pwacam/profile_screen.dart';
 
-class AutofillScreen extends StatefulWidget {
-  const AutofillScreen({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<AutofillScreen> createState() => _AutofillScreenState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _AutofillScreenState extends State<AutofillScreen> {
+class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _simulateLogin() {
-    // بررسی می‌کند که آیا فیلدها معتبر هستند یا خیر
+  void _login() {
+    // اگر فیلدها معتبر بودند
     if (_formKey.currentState!.validate()) {
-      // در یک سناریوی واقعی، اینجا اطلاعات را به سرور ارسال می‌کنید
-      // برای شبیه‌سازی، ما فقط اطلاعات را چاپ کرده و یک پیام موفقیت نشان می‌دهیم
-      // این "ارسال موفق" به مرورگر کمک می‌کند تا بفهمد که باید پیشنهاد ذخیره رمز را بدهد
-      print('Username: ${_usernameController.text}');
-      print('Password: ${_passwordController.text}');
-
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ورود موفقیت‌آمیز بود! مرورگر باید پیشنهاد ذخیره را بدهد.'), backgroundColor: Colors.green));
+      // *** تغییر کلیدی اینجاست ***
+      // به جای نمایش SnackBar، به صفحه خوش‌آمدگویی می‌رویم.
+      // این کار به مرورگر سیگنال می‌دهد که ورود موفق بوده است.
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
     }
   }
 
@@ -35,11 +33,10 @@ class _AutofillScreenState extends State<AutofillScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('autofill screen')),
+      appBar: AppBar(title: const Text('صفحه ورود')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          // ۱. تمام فیلدهای فرم را داخل یک AutofillGroup قرار می‌دهیم
           child: AutofillGroup(
             child: Form(
               key: _formKey,
@@ -48,40 +45,34 @@ class _AutofillScreenState extends State<AutofillScreen> {
                 children: [
                   const Icon(Icons.lock_person, size: 80, color: Colors.indigo),
                   const SizedBox(height: 32),
-
-                  // فیلد نام کاربری
                   TextFormField(
                     controller: _usernameController,
-                    decoration: const InputDecoration(labelText: 'username', prefixIcon: Icon(Icons.person_outline)),
-                    // ۲. این راهنما به مرورگر می‌گوید که این فیلد برای نام کاربری است
+                    decoration: const InputDecoration(labelText: 'نام کاربری', prefixIcon: Icon(Icons.person_outline)),
                     autofillHints: const [AutofillHints.username],
                     keyboardType: TextInputType.name,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'enter username';
+                        return 'لطفا نام کاربری را وارد کنید';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-
-                  // فیلد رمز عبور
                   TextFormField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(labelText: 'password', prefixIcon: Icon(Icons.lock_outline)),
+                    decoration: const InputDecoration(labelText: 'رمز عبور', prefixIcon: Icon(Icons.lock_outline)),
                     obscureText: true,
-                    // ۲. این راهنما به مرورگر می‌گوید که این فیلد برای رمز عبور است
                     autofillHints: const [AutofillHints.password],
-                    onEditingComplete: _simulateLogin, // برای لاگین با زدن دکمه Enter روی کیبورد
+                    onEditingComplete: _login,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'please enter password';
+                        return 'لطفا رمز عبور را وارد کنید';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(onPressed: _simulateLogin, child: const Text('login')),
+                  ElevatedButton(onPressed: _login, child: const Text('ورود')),
                 ],
               ),
             ),
