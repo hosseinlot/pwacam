@@ -16,7 +16,9 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final FocusNode _keyboardFocusNode = FocusNode(); // برای RawKeyboardListener
+
+  // **تغییر ۱: یک FocusNode برای فیلد پسورد تعریف می‌کنیم**
+  final FocusNode _passwordFocusNode = FocusNode();
 
   bool _isLoading = false;
 
@@ -66,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-    _keyboardFocusNode.dispose();
+    _passwordFocusNode.dispose(); // **تغییر ۲: FocusNode را حتما dispose کنید**
     super.dispose();
   }
 
@@ -75,72 +77,66 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('ورود / ثبت‌نام')),
       body: Center(
-        // **تغییر ۱: اضافه کردن RawKeyboardListener**
-        child: RawKeyboardListener(
-          focusNode: _keyboardFocusNode,
-          onKey: (event) {
-            // این تابع به فلاتر کمک می‌کند تا تغییرات Autofill را تشخیص دهد
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: AutofillGroup(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Icon(Icons.lock_person_sharp, size: 80, color: Colors.indigo),
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _usernameController,
-                      decoration: const InputDecoration(labelText: 'نام کاربری', prefixIcon: Icon(Icons.person_outline)),
-                      autofillHints: const [AutofillHints.username, AutofillHints.newUsername],
-                      textInputAction: TextInputAction.next,
-                      keyboardType: TextInputType.name,
-                      // **تغییر ۲: اضافه کردن onChanged**
-                      onChanged: (value) {
-                        setState(() {});
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'لطفا نام کاربری را وارد کنید';
-                        return null;
-                      },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: AutofillGroup(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(Icons.lock_person_sharp, size: 80, color: Colors.indigo),
+                  const SizedBox(height: 32),
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(labelText: 'نام کاربری', prefixIcon: Icon(Icons.person_outline)),
+                    autofillHints: const [AutofillHints.username, AutofillHints.newUsername],
+                    textInputAction: TextInputAction.next,
+                    keyboardType: TextInputType.name,
+                    // **تغییر ۳: منطق انتقال فوکوس**
+                    onChanged: (value) {
+                      // اگر فیلد نام کاربری به طور ناگهانی پر شد (یعنی Autofill شده)
+                      // و فیلد پسورد خالی بود، فوکوس را به پسورد منتقل کن.
+                      if (value.isNotEmpty && _passwordController.text.isEmpty) {
+                        _passwordFocusNode.requestFocus();
+                      }
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'لطفا نام کاربری را وارد کنید';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordController,
+                    focusNode: _passwordFocusNode, // **تغییر ۴: اتصال FocusNode به فیلد پسورد**
+                    decoration: const InputDecoration(labelText: 'رمز عبور', prefixIcon: Icon(Icons.lock_outline)),
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.password, AutofillHints.newPassword],
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _onLogin(),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'لطفا رمز عبور را وارد کنید';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  if (_isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                          onPressed: _onLogin,
+                          child: const Text('ورود'),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton(onPressed: _onRegister, child: const Text('ثبت‌نام')),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(labelText: 'رمز عبور', prefixIcon: Icon(Icons.lock_outline)),
-                      obscureText: true,
-                      autofillHints: const [AutofillHints.password, AutofillHints.newPassword],
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _onLogin(),
-                      // **تغییر ۲: اضافه کردن onChanged**
-                      onChanged: (value) {
-                        setState(() {});
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'لطفا رمز عبور را وارد کنید';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    if (_isLoading)
-                      const Center(child: CircularProgressIndicator())
-                    else
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-                            onPressed: _onLogin,
-                            child: const Text('ورود'),
-                          ),
-                          const SizedBox(height: 8),
-                          OutlinedButton(onPressed: _onRegister, child: const Text('ثبت‌نام')),
-                        ],
-                      ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),
