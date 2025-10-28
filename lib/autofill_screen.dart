@@ -1,6 +1,5 @@
 // login_page.dart
 
-// **۱. import های لازم**
 import 'dart:ui_web' as ui_web;
 import 'dart:html' as html;
 
@@ -17,7 +16,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // **۲. کنترلرهای HTML برای هر دو فیلد**
   late final html.InputElement _usernameInputElement;
   late final html.InputElement _passwordInputElement;
   final String _formViewId = "native-login-form";
@@ -27,9 +25,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // **۳. ساخت و رجیستر کردن کل فرم HTML**
-    _usernameInputElement = _createUsernameInputElement();
-    _passwordInputElement = _createPasswordInputElement();
+    _usernameInputElement = _createInputElement(type: 'text', placeholder: 'نام کاربری', autocomplete: 'username');
+    _passwordInputElement = _createInputElement(type: 'password', placeholder: 'رمز عبور', autocomplete: 'current-password');
     _registerFormView();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -37,50 +34,60 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  // تابع ساخت فیلد نام کاربری HTML
-  html.InputElement _createUsernameInputElement() {
-    final element = html.InputElement(type: 'text');
-    element.id = 'username';
-    element.setAttribute('autocomplete', 'username');
-    element.placeholder = 'نام کاربری';
+  // **تغییر ۱: استایل‌دهی دقیق بر اساس کدهای Decoration شما**
+  html.InputElement _createInputElement({required String type, required String placeholder, required String autocomplete}) {
+    final element = html.InputElement(type: type);
+    element.setAttribute('autocomplete', autocomplete);
+    element.placeholder = placeholder;
+
+    // تعریف رنگ‌ها بر اساس AppColors شما (مقادیر حدسی هستند، در صورت نیاز جایگزین کنید)
+    final normalBorderColor = '#E5E7EB'; // معادل Colors.grey.shade300
+    final focusedBorderColor = '#7F56D9'; // معادل AppColors.brand300
+    final focusedShadowRingColor = '#F4EBFF'; // معادل AppColors.brand50
+    final subtleShadowColor = 'rgba(10, 12, 18, 0.075)'; // معادل Color(0x0C0A0C12)
+
+    // استایل‌های حالت عادی (Normal Decoration)
     element.style
+      ..backgroundColor = '#FFFFFF' // رنگ پس‌زمینه سفید
+      ..border = '1px solid $normalBorderColor'
+      ..borderRadius = '8px'
+      ..padding = '0 16px'
+      ..outline = 'none'
+      ..fontSize = '16px'
+      ..fontFamily = 'Vazirmatn, system-ui, sans-serif' // فونت وزیرمتن را اضافه کردم
       ..width = '100%'
       ..height = '48px'
-      ..border = '1px solid grey'
-      ..borderRadius = '4px'
-      ..padding = '0 12px'
-      ..marginBottom = '16px' // فاصله تا فیلد بعدی
-      ..fontSize = '16px'
-      ..boxSizing = 'border-box';
+      ..boxSizing = 'border-box'
+      ..transition = 'border-color 0.2s, box-shadow 0.2s'; // انیمیشن نرم
+
+    // افکت حالت فوکوس (Focused Decoration)
+    element.onFocus.listen((event) {
+      element.style.borderColor = focusedBorderColor;
+      // ترکیب دو سایه شما: یک سایه ring و یک سایه drop
+      element.style.boxShadow = '0 1px 2px $subtleShadowColor, 0 0 0 4px $focusedShadowRingColor';
+    });
+
+    // برگشت به حالت عادی
+    element.onBlur.listen((event) {
+      element.style.borderColor = normalBorderColor;
+      element.style.boxShadow = 'none'; // حذف سایه
+    });
+
     return element;
   }
 
-  // تابع ساخت فیلد رمز عبور HTML
-  html.InputElement _createPasswordInputElement() {
-    final element = html.InputElement(type: 'password');
-    element.id = 'password';
-    element.setAttribute('autocomplete', 'current-password');
-    element.placeholder = 'رمز عبور';
-    element.style
-      ..width = '100%'
-      ..height = '48px'
-      ..border = '1px solid grey'
-      ..borderRadius = '4px'
-      ..padding = '0 12px'
-      ..fontSize = '16px'
-      ..boxSizing = 'border-box';
-    return element;
-  }
-
-  // این تابع هر دو فیلد را داخل یک عنصر والد قرار داده و رجیستر می‌کند
   void _registerFormView() {
-    final container = html.DivElement()
-      ..append(_usernameInputElement)
+    final passwordContainer = html.DivElement()
+      ..style.marginTop = '16px'
       ..append(_passwordInputElement);
+
+    final formContainer = html.DivElement()
+      ..append(_usernameInputElement)
+      ..append(passwordContainer);
 
     ui_web.platformViewRegistry.registerViewFactory(
       _formViewId,
-      (int viewId) => container,
+      (int viewId) => formContainer,
     );
   }
 
@@ -99,10 +106,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لطفا نام کاربری و رمز عبور را وارد کنید'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('لطفا نام کاربری و رمز عبور را وارد کنید')),
       );
       return;
     }
@@ -119,10 +123,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }
     } finally {
@@ -160,22 +161,17 @@ class _LoginPageState extends State<LoginPage> {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          // **۴. دیگر به AutofillGroup یا Form نیازی نیست**
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Icon(Icons.lock_person_sharp, size: 80, color: Colors.indigo),
               const SizedBox(height: 32),
-
-              // **۵. ویجت‌های TextFormField با HtmlElementView جایگزین شدند**
               SizedBox(
-                // ارتفاع تقریبی دو فیلد + فاصله بین آنها
                 height: 48 + 16 + 48,
                 child: HtmlElementView(
                   viewType: _formViewId,
                 ),
               ),
-
               const SizedBox(height: 24),
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
