@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:html' as html;
+import 'package:shared_preferences/shared_preferences.dart'; // <-- پکیج جدید
 import 'package:pwacam/profile_screen.dart';
 import 'package:pwacam/services/auth_service.dart';
 
@@ -17,21 +18,44 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  // فقط یک FocusNode برای فیلد پسورد نیاز داریم
   final FocusNode _passwordFocusNode = FocusNode();
 
   bool _isLoading = false;
 
+  // **تغییر ۱: اضافه کردن initState برای بارگذاری نام کاربری**
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  // این تابع نام کاربری ذخیره شده را می‌خواند
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedUsername = prefs.getString('saved_username');
+    if (savedUsername != null) {
+      setState(() {
+        _usernameController.text = savedUsername;
+        // **مهم‌ترین بخش: بلافاصله فوکوس را به پسورد منتقل کن**
+        // این کار باعث نمایش پاپ‌آپ Fill Password می‌شود
+        _passwordFocusNode.requestFocus();
+      });
+    }
+  }
+
   Future<void> _performAuthAction(Future<void> Function() authFuture) async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() {
       _isLoading = true;
     });
 
     try {
       await authFuture();
+
+      // **تغییر ۲: ذخیره نام کاربری پس از ورود موفق**
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_username', _usernameController.text);
+
       html.window.location.assign('/welcome');
     } catch (e) {
       if (mounted) {
@@ -59,6 +83,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onRegister() {
+    // معمولا پس از ثبت‌نام هم نام کاربری را ذخیره می‌کنیم
     _performAuthAction(() => AuthService.register(
           _usernameController.text,
           _passwordController.text,
@@ -94,16 +119,6 @@ class _LoginPageState extends State<LoginPage> {
                     autofillHints: const [AutofillHints.username, AutofillHints.newUsername],
                     textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.name,
-                    // **تغییر کلیدی اینجاست**
-                    onTap: () {
-                      // بعد از نیم ثانیه چک می‌کنیم
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        // اگر نام کاربری پر شده بود ولی رمز عبور نه، فوکوس را منتقل کن
-                        if (_usernameController.text.isNotEmpty && _passwordController.text.isEmpty) {
-                          // _passwordFocusNode.requestFocus();
-                        }
-                      });
-                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) return 'لطفا نام کاربری را وارد کنید';
                       return null;
@@ -112,14 +127,17 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
-                    focusNode: _passwordFocusNode, // اتصال FocusNode
+                    focusNode: _passwordFocusNode,
                     decoration: const InputDecoration(labelText: 'رمز عبور', prefixIcon: Icon(Icons.lock_outline)),
                     obscureText: true,
                     autofillHints: const [AutofillHints.password, AutofillHints.newPassword],
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _onLogin(),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'لطفا رمز عبور را وارد کنید';
+                      // اگر نام کاربری پر شده باشد، پسورد نباید خالی باشد
+                      if (_usernameController.text.isNotEmpty && (value == null || value.isEmpty)) {
+                        return 'لطفا رمز عبور را وارد کنید';
+                      }
                       return null;
                     },
                   ),
