@@ -1,8 +1,10 @@
 // login_page.dart
 
-import 'package:flutter/material.dart';
-import 'dart:async';
+// **۱. دو import جدید و ضروری اضافه می‌شود**
+import 'dart:ui_web' as ui_web;
 import 'dart:html' as html;
+
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pwacam/profile_screen.dart';
 import 'package:pwacam/services/auth_service.dart';
@@ -17,30 +19,82 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final FocusNode _passwordFocusNode = FocusNode();
+
+  // **۲. کنترلر و فوکوس‌نود پسورد حذف و با المنت HTML جایگزین می‌شود**
+  late final html.InputElement _passwordInputElement;
+  final String _passwordViewId = "native-password-field";
 
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadUsername();
+    // **۳. المنت HTML ساخته و رجیستر می‌شود**
+    _passwordInputElement = _createPasswordInputElement();
+    _registerPasswordInputElement();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUsername();
+    });
+  }
+
+  // این تابع المنت HTML پسورد را با استایل‌های مناسب می‌سازد
+  html.InputElement _createPasswordInputElement() {
+    final element = html.InputElement(type: 'password');
+    element.id = 'password'; // برای Autofill بهتر
+    element.setAttribute('autocomplete', 'current-password');
+
+    // **۴. استایل‌های CSS برای شبیه‌سازی ظاهر TextFormField**
+    element.style
+      ..width = '100%'
+      ..height = '100%'
+      ..border = 'none'
+      ..outline = 'none'
+      ..padding = '8px 12px' // پدینگ داخلی
+      ..backgroundColor = 'transparent'
+      ..fontSize = '16px' // اندازه فونت
+      ..fontFamily = 'system-ui, sans-serif'; // فونت پیش‌فرض سیستم
+
+    element.placeholder = 'رمز عبور'; // متن راهنما
+
+    return element;
+  }
+
+  // این تابع المنت ساخته شده را برای استفاده در فلاتر رجیستر می‌کند
+  void _registerPasswordInputElement() {
+    ui_web.platformViewRegistry.registerViewFactory(
+      _passwordViewId,
+      (int viewId) => _passwordInputElement,
+    );
   }
 
   Future<void> _loadUsername() async {
     final prefs = await SharedPreferences.getInstance();
     final savedUsername = prefs.getString('saved_username');
-    if (savedUsername != null) {
-      setState(() {
-        _usernameController.text = savedUsername;
-        _passwordFocusNode.requestFocus();
-      });
+    if (savedUsername != null && mounted) {
+      _usernameController.text = savedUsername;
+      // **۵. به جای FocusNode، مستقیماً به خود المنت HTML فوکوس می‌دهیم**
+      _passwordInputElement.focus();
     }
   }
 
   Future<void> _performAuthAction(Future<void> Function() authFuture) async {
-    if (!_formKey.currentState!.validate()) return;
+    // **۶. اعتبارسنجی فرم فلاتر و فیلد HTML به صورت جداگانه**
+    final isFlutterFormValid = _formKey.currentState!.validate();
+    final isPasswordEmpty = _passwordInputElement.value?.isEmpty ?? true;
+
+    if (!isFlutterFormValid || (_usernameController.text.isNotEmpty && isPasswordEmpty)) {
+      if (isPasswordEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لطفا رمز عبور را وارد کنید'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -69,24 +123,23 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onLogin() {
+    // **۷. مقدار پسورد مستقیماً از المنت HTML خوانده می‌شود**
     _performAuthAction(() => AuthService.login(
           _usernameController.text,
-          _passwordController.text,
+          _passwordInputElement.value ?? '',
         ));
   }
 
   void _onRegister() {
     _performAuthAction(() => AuthService.register(
           _usernameController.text,
-          _passwordController.text,
+          _passwordInputElement.value ?? '',
         ));
   }
 
   @override
   void dispose() {
     _usernameController.dispose();
-    _passwordController.dispose();
-    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -117,31 +170,17 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    focusNode: _passwordFocusNode,
-                    decoration: const InputDecoration(labelText: 'رمز عبور', prefixIcon: Icon(Icons.lock_outline)),
-                    obscureText: true,
-                    autofillHints: const [AutofillHints.password, AutofillHints.newPassword],
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _onLogin(),
-                    // *** تغییر کلیدی و نهایی اینجاست ***
-                    onTap: () {
-                      // یک تاخیر کوتاه می‌دهیم تا فرصت برای Autofill فراهم شود
-                      Future.delayed(const Duration(milliseconds: 100), () {
-                        // اگر پس از تاخیر، فیلد هنوز خالی بود، دوباره به آن فوکوس می‌دهیم
-                        // این "تلنگر" باعث می‌شود رمز عبور پر شود
-                        if (mounted && _passwordController.text.isEmpty) {
-                          _passwordFocusNode.requestFocus();
-                        }
-                      });
-                    },
-                    validator: (value) {
-                      if (_usernameController.text.isNotEmpty && (value == null || value.isEmpty)) {
-                        return 'لطفا رمز عبور را وارد کنید';
-                      }
-                      return null;
-                    },
+
+                  // **۸. TextFormField پسورد با HtmlElementView جایگزین می‌شود**
+                  Container(
+                    height: 50, // ارتفاع را مطابق با TextFormField خودتان تنظیم کنید
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: HtmlElementView(
+                      viewType: _passwordViewId,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   if (_isLoading)
